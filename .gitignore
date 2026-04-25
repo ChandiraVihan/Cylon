@@ -1,0 +1,5 @@
+
+.exe*
+.o
+.lex.yy.c 
+.tab.c 
