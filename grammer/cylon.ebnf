@@ -1,0 +1,18 @@
+Cylon = "TASK", Identifier, "{", RunStmt, SchduleStmt, "}" ;
+
+RunStmt = "RUN", String ;
+
+SchduleStmt = "EVERY", "DAY", "AT", TIME ;
+
+Identifier = Letter, { Letter | Digit } ;
+
+String = '"', { Character }, '"' ;
+
+Time = Digit, Digit, ":", Digit, Digit ;
+
+Letter      = "A" | ... | "Z" | "a" | ... | "z" ;
+
+Digit       = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+Character   = ? any character except " ? ;
+
