@@ -1,8 +1,12 @@
-Cylon = "TASK", Identifier, "{", RunStmt, SchduleStmt, "}" ;
+Cylon =TASK, { TASK } ;
 
-RunStmt = "RUN", String ;
+TASK = "TASK", Identifier, "{", Command, ScheduleTime, ScheduleStmt, "}"  ;
 
-SchduleStmt = "EVERY", "DAY", "AT", TIME ;
+Command = "RUN" | "MOVE" | "GENERATE" | "EXPORT" | "SEND", String ;
+
+ScheduleTime = "EVERY DAY" | "AFTER" | "BEFORE" | 
+
+ScheduleStmt = ScheduleTime, "AT", TIME ;
 
 Identifier = Letter, { Letter | Digit } ;
 
@@ -15,4 +19,18 @@ Letter      = "A" | ... | "Z" | "a" | ... | "z" ;
 Digit       = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
 
 Character   = ? any character except " ? ;
+
+- TASK
+- RUN
+- EVERY
+- DAY
+- AT
+- BEFORE
+- AFTER
+- SUCCESS
+- FAILED
+- IF
+- WEEK
+- ON
+- TIME
 

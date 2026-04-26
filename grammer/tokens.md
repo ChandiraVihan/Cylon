@@ -14,3 +14,11 @@
 - WEEK
 - ON
 - TIME
+
+# Statements
+
+- RUN - TASK 1,2,3,5,6,9 
+- MOVE - TASK 8
+- GENERATE - TASK 7
+- EXPORT - TASK 8
+- SEND - TASK 4,10

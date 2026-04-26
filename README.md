@@ -1,4 +1,4 @@
-# Cylon ( cycle on)
+# Cylon ( cycle on )
 
 ## Task Types
 
@@ -13,7 +13,7 @@
 - Service Restart - restart a system service or process
 - API calls - send and HTTP request to an external enspoint
 
-## Possibe workflows
+## Possible workflows
 
 - Backup DB → Generate Report → Send Email Notification → Cleanup old files
 
