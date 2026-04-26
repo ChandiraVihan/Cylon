@@ -1,36 +1,30 @@
-Cylon =TASK, { TASK } ;
+Cylon = TASK, { TASK } ;   
 
-TASK = "TASK", Identifier, "{", Command, ScheduleTime, ScheduleStmt, "}"  ;
+TASK = "TASK", Identifier, "{", Command, [TaskBody] "}"  ;
 
-Command = "RUN" | "MOVE" | "GENERATE" | "EXPORT" | "SEND", String ;
+TaskBody =  ScheduleTime, ScheduleStmt, Dependency, Condition
 
-ScheduleTime = "EVERY DAY" | "AFTER" | "BEFORE" | 
+Command = "RUN" | "MOVE" | "GENERATE" | "EXPORT" | "SEND", """CommandBody""" ;
 
-ScheduleStmt = ScheduleTime, "AT", TIME ;
+CommandBody = 
 
-Identifier = Letter, { Letter | Digit } ;
+Dependency = "AFTER" | "BEFORE", Identifier ;
 
-String = '"', { Character }, '"' ;
+Condition = "SUCCESS" | "FAILED" ;
 
-Time = Digit, Digit, ":", Digit, Digit ;
+ScheduleTime = "EVERY DAY" | "EVERY WEEK" ;
 
-Letter      = "A" | ... | "Z" | "a" | ... | "z" ;
+ScheduleStmt = ScheduleTime, "AT", TIME | Identifier ;
 
-Digit       = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+Identifier = Letter, { Letter | Digit } ; 
 
-Character   = ? any character except " ? ;
+String = '"', { Character }, '"' ; 
 
-- TASK
-- RUN
-- EVERY
-- DAY
-- AT
-- BEFORE
-- AFTER
-- SUCCESS
-- FAILED
-- IF
-- WEEK
-- ON
-- TIME
+Time = Digit, Digit, ":", Digit, Digit ; 
+
+Letter      = "A" | ... | "Z" | "a" | ... | "z" ; 
+
+Digit       = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ; 
+
+Character = ? any printable character except double quote ? ;
 
