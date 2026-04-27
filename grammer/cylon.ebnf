@@ -1,6 +1,6 @@
 Cylon = TASK, { TASK } ;   
 
-TASK = "TASK", Identifier, "{", Command, [TaskBody] "}"  ;
+TASK = "TASK", Identifier, "{", Command, [TaskBody], "}"  ;
 
 TaskBody =  [ScheduleStmt], [Dependency], [Condition] ;
 
@@ -22,7 +22,7 @@ Condition = "IF", ("SUCCESS" | "FAILED") ;
 
 ScheduleStmt = ScheduleTime, "AT", TIME ;
 
-ScheduleTime = "EVERY DAY" | ("EVERY WEEK", "ON", DayOfWeek) ;
+ScheduleTime = "EVERY", "DAY" | ("EVERY", "WEEK", "ON", DayOfWeek) ;
 
 DayOfWeek = "SUNDAY" | "MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" ;
 
@@ -30,9 +30,9 @@ Identifier = Letter, { Letter | Digit } ;
 
 String = '"', { Character }, '"' ; 
 
-Time = Digit, Digit, ":", Digit, Digit ; 
+TIME = Digit, Digit, ":", Digit, Digit ; 
 
-Letter      = "A" | ... | "Z" | "a" | ... | "z" ; 
+Letter      = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ; 
 
 Digit       = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ; 
 
