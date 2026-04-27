@@ -2,19 +2,21 @@ Cylon = TASK, { TASK } ;
 
 TASK = "TASK", Identifier, "{", Command, [TaskBody] "}"  ;
 
-TaskBody =  ScheduleTime, ScheduleStmt, Dependency, Condition
+TaskBody =  ScheduleTime, ScheduleStmt | Dependency | Condition ;
 
-Command = "RUN" | "MOVE" | "GENERATE" | "EXPORT" | "SEND", """CommandBody""" ;
+Command = CommandType, CommandBody ;
 
-CommandBody = 
+CommandType = "RUN" | "MOVE" | "GENERATE" | "EXPORT" | "SEND" ;
 
-Dependency = "AFTER" | "BEFORE", Identifier ;
+CommandBody = "RUN 
 
-Condition = "SUCCESS" | "FAILED" ;
+Dependency = ("AFTER" | "BEFORE"), Identifier ;
 
-ScheduleTime = "EVERY DAY" | "EVERY WEEK" ;
+Condition = "IF", ("SUCCESS" | "FAILED") ;
 
-ScheduleStmt = ScheduleTime, "AT", TIME | Identifier ;
+ScheduleTime = "EVERY DAY" | ("EVERY WEEK", "ON", DayOfWeek)
+
+ScheduleStmt = ScheduleTime, "AT", TIME , Identifier ;
 
 Identifier = Letter, { Letter | Digit } ; 
 
