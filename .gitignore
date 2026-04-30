@@ -1,5 +1,6 @@
 
-.exe*
-.o
-.lex.yy.c 
-.tab.c 
+exe*
+o
+lex.yy.c 
+parser.tab.c 
+parser.tab.h

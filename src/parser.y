@@ -26,7 +26,6 @@ Task:
 RunStmt:
     RUN STRING
     {
-        printf(" Run: %s\n", $2);
     }
 ;
 
