@@ -11,7 +11,30 @@ int yylex();
 }
 
 %token <str> IDENTIFIER STRING TIME
-%token TASK RUN EVERY DAY AT
+%token TASK
+%token RUN 
+%token EVERY
+%token DAY
+%token AT
+%token ON
+%token MOVE
+%token SEND
+%token TO
+%token GENERATE
+%token EXPORT
+%token AFTER
+%token BEFORE
+%token IF
+%token SUCCESS
+%token FAILED
+%token WEEK
+%token SUNDAY
+%token MONDAY
+%token TUESDAY
+%token WEDNESDAY
+%token THURSDAY
+%token FRIDAY
+%token SATURDAY
 %token LBRACE RBRACE
 
 %%
