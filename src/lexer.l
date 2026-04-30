@@ -7,9 +7,28 @@
 
 "TASK"        { return TASK; }
 "RUN"         { return RUN; }
+"MOVE"        { return MOVE; }
+"SEND"        { return SEND; }
+"TO"          { return TO; }
+"GENERATE"    { return GENERATE; }
+"EXPORT"      { return EXPORT; }
+"AFTER"       { return AFTER; }
+"BEFORE"      { return BEFORE; }
+"IF"          { return IF; }
+"SUCCESS"     { return SUCCESS; }
+"FAILED"      { return FAILED; }
 "EVERY"       { return EVERY; }
 "DAY"         { return DAY; }
 "AT"          { return AT; }
+"ON"          { return ON; }
+"WEEK"        { return WEEK; }
+"SUNDAY"      { return SUNDAY; }
+"MONDAY"      { return MONDAY; }
+"TUESDAY"     { return TUESDAY; }
+"WEDNESDAY"   { return WEDNESDAY; }
+"THURSDAY"    { return THURSDAY; }
+"FRIDAY"      { return FRIDAY; }
+"SATURDAY"    { return SATURDAY; }
 
 "{"           { return LBRACE; }
 "}"           { return RBRACE; }
