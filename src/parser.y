@@ -39,32 +39,42 @@ int yylex();
 
 %% 
 
+cylon:
+    task_list
+;
+
+task_list:
+     Task |
+     task_list Task
+;
+
 Task:
     TASK IDENTIFIER LBRACE Command TaskBodyOpt RBRACE
     {
-        printf("Executing TASK: %s\n", $2);
+        printf("Executing Task: %s\n", $2);
     }
 ;
-    
-TaskBodyOpt: 
-     TaskBody | /* empty */;
+
+
+ TaskBodyOpt:
+    %empty
+    | TaskBodyOpt TaskBody
+;
+
 
 TaskBody:
-     ScheduleOpt DependencyOpt ConditionOpt;
-
-ScheduleOpt:
-     ScheduleStmt | /* empty */;
-     
-
-DependencyOpt:    
-     Dependency | /* empty */;
-      
-      
-ConditionOpt:     
-     Condition | /* empty */;
+    ScheduleStmt
+    | Dependency
+    | Condition
+;
 
 Command:
-     RunCmd | MoveCmd | GenerateCmd | ExportCmd | SendCmd;
+     RunCmd 
+     | MoveCmd 
+     | GenerateCmd 
+     | ExportCmd 
+     | SendCmd
+;
 
 
 RunCmd:
@@ -112,11 +122,32 @@ DayOfWeek:
         
 %%
 
+
 void yyerror(const char *s) {
     fprintf(stderr, "Error: %s\n", s);
 }
 
 int main() {
-    printf("--- Execution START ---");
-    return yyparse();
+    printf("\n");
+    printf(
+        " ██████╗██╗   ██╗██╗      ██████╗ ███╗   ██╗\n"
+        "██╔════╝╚██╗ ██╔╝██║     ██╔═══██╗████╗  ██║\n"
+        "██║      ╚████╔╝ ██║     ██║   ██║██╔██╗ ██║\n"
+        "██║       ╚██╔╝  ██║     ██║   ██║██║╚██╗██║\n"
+        "╚██████╗   ██║   ███████╗╚██████╔╝██║ ╚████║\n"
+        " ╚═════╝   ╚═╝   ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝\n\n"
+    );
+    
+
+    int result = yyparse();
+    
+    printf("Parsing TaskLang++ input...\n\n");
+    printf("--- EXECUTION START ---\n");
+
+    if (result == 0) {
+        printf("\n--- EXECUTION COMPLETE ---\n");
+    } else {
+        printf("\n--- EXECUTION FAILED ---\n");
+    }
+    return result;
 }
