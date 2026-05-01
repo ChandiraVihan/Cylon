@@ -1,0 +1,9 @@
+TASK cleanup {
+    RUN "cleanup.sh"
+    EVERY DAY AT 03:00
+}
+
+TASK cleanup {
+    RUN "wipe_temp.sh"
+    EVERY WEEK ON SUNDAY AT 04:00
+}

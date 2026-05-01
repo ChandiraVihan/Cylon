@@ -7,6 +7,7 @@
 char* g_schedule = NULL;
 char* g_dependency = NULL;
 char* g_condition = NULL;
+char* g_cmd_label  = "Script";
 
 
 void yyerror(const char *s);
@@ -74,13 +75,15 @@ Task:
     TASK IDENTIFIER LBRACE Command TaskBodyOpt RBRACE
     {
         printf("\nExecuting Task: %s\n", $2);
-        printf("  Script: %s\n", $4);
+        printf("  %s: %s\n", g_cmd_label, $4);
         if(g_schedule)  printf("  Schedule: %s\n", g_schedule);
         if(g_dependency) printf("  Depends on: %s\n", g_dependency);
         if(g_condition)  printf("  Condition: %s\n", g_condition);
         g_schedule = NULL;
         g_dependency = NULL;
         g_condition = NULL;
+        g_cmd_label  = "Script";
+
     }
 ;
 
@@ -107,38 +110,57 @@ Command:
 ;
 
 
+/* Script Execution — RUN "script.py" */
 RunCmd:
-    RUN STRING { $$ = $2; }
+    RUN STRING
+    {
+        g_cmd_label = "RUN";
+        $$ = $2;
+    }
 ;
 
 
+/* File Transfer — MOVE "src" TO "dest" */
 MoveCmd:
-    MOVE STRING TO STRING 
-    { 
-        char buf[200];
+    MOVE STRING TO STRING
+    {
+        g_cmd_label = "Move";
+        char buf[300];
         sprintf(buf, "%s TO %s", $2, $4);
         $$ = strdup(buf);
     }
 ;
 
 
+/* Email Notification — SEND "msg" TO "recipient" */
 SendCmd:
-    SEND STRING TO STRING 
-    { 
-        char buf[200];
+    SEND STRING TO STRING
+    {
+        g_cmd_label = "Send";
+        char buf[300];
         sprintf(buf, "%s TO %s", $2, $4);
         $$ = strdup(buf);
     }
 ;
 
 
+/* Report Generation — GENERATE "report.pdf" */
 GenerateCmd:
-    GENERATE STRING { $$ = $2; }
+    GENERATE STRING
+    {
+        g_cmd_label = "Generate";
+        $$ = $2;
+    }
 ;
 
 
+/* Data Export — EXPORT "output.csv" */
 ExportCmd:
-    EXPORT STRING { $$ = $2; }
+    EXPORT STRING
+    {
+        g_cmd_label = "Export";
+        $$ = $2;
+    }
 ;
 
 

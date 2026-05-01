@@ -1,0 +1,9 @@
+TASK hourly_job {
+    RUN "sync.sh"
+    EVERY DAY AT 2:00 
+}
+
+TASK morning_job {
+    RUN "hello.sh"
+    EVERY DAY AT morning
+}

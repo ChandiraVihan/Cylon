@@ -1,0 +1,12 @@
+TASK backupDB {
+    RUN "backup.sh"
+    EVERY DAY AT 02:00
+}
+
+TASK moveLogs {
+    MOVE "app.log" TO "/archive/logs/"
+}
+
+TASK notifyUser {
+    SEND "Report is ready" TO "admin@company.com"
+}
