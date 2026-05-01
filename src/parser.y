@@ -107,16 +107,20 @@ ExportCmd:
 
 
 Dependency:
-     AFTER IDENTIFIER | BEFORE IDENTIFIER;
+    AFTER IDENTIFIER  { printf("  Depends on: %s\n", $2); }
+    | BEFORE IDENTIFIER { printf("  Depends on: %s\n", $2); }
+;
 
 
 Condition:
-     IF ConditionType;
+    IF ConditionType { printf("  Condition: %s\n", $2); }
+;
 
 
 ConditionType:
-     SUCCESS | FAILED;
-
+    SUCCESS  { $$ = "success"; }
+    | FAILED { $$ = "failed"; }
+;
 
 ScheduleStmt:
     ScheduleTime AT TIME
@@ -131,8 +135,16 @@ ScheduleTime:
     | EVERY WEEK ON DayOfWeek { $$ = "EVERY WEEK ON ..."; }
 ;
 
+
 DayOfWeek:
-     SUNDAY | MONDAY | TUESDAY | WEDNESDAY | THURSDAY | FRIDAY | SATURDAY;
+    SUNDAY    { $$ = "SUNDAY"; }
+    | MONDAY  { $$ = "MONDAY"; }
+    | TUESDAY { $$ = "TUESDAY"; }
+    | WEDNESDAY { $$ = "WEDNESDAY"; }
+    | THURSDAY  { $$ = "THURSDAY"; }
+    | FRIDAY    { $$ = "FRIDAY"; }
+    | SATURDAY  { $$ = "SATURDAY"; }
+;
         
 %%
 
