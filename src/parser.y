@@ -1,6 +1,13 @@
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+
+
+char* g_schedule = NULL;
+char* g_dependency = NULL;
+char* g_condition = NULL;
+
 
 void yyerror(const char *s);
 int yylex();
@@ -11,6 +18,13 @@ int yylex();
 
 }
 
+%type <str> Command
+%type <str> RunCmd
+%type <str> MoveCmd
+%type <str> SendCmd
+%type <str> GenerateCmd
+%type <str> ExportCmd
+%type <str> ScheduleStmt
 %type <str> ScheduleTime
 %type <str> ConditionType
 %type <str> DayOfWeek
@@ -42,6 +56,8 @@ int yylex();
 %token SATURDAY
 %token LBRACE RBRACE
 
+
+
 %% 
 
 cylon:
@@ -53,10 +69,18 @@ task_list:
      task_list Task
 ;
 
+
 Task:
     TASK IDENTIFIER LBRACE Command TaskBodyOpt RBRACE
     {
         printf("Executing Task: %s\n", $2);
+        printf("  Script: %s\n", $4);
+        if(g_schedule)  printf("  Schedule: %s\n", g_schedule);
+        if(g_dependency) printf("  Depends on: %s\n", g_dependency);
+        if(g_condition)  printf("  Condition: %s\n", g_condition);
+        g_schedule = NULL;
+        g_dependency = NULL;
+        g_condition = NULL;
     }
 ;
 
@@ -73,47 +97,59 @@ TaskBody:
     | Condition
 ;
 
+
 Command:
-     RunCmd 
-     | MoveCmd 
-     | GenerateCmd 
-     | ExportCmd 
-     | SendCmd
+    RunCmd    { $$ = $1; }
+    | MoveCmd    { $$ = $1; }
+    | GenerateCmd { $$ = $1; }
+    | ExportCmd  { $$ = $1; }
+    | SendCmd    { $$ = $1; }
 ;
 
 
 RunCmd:
-    RUN STRING
-    {
-        printf("  Script: %s\n", $2);
-    }
+    RUN STRING { $$ = $2; }
 ;
 
 
 MoveCmd:
-     MOVE STRING TO STRING;
+    MOVE STRING TO STRING 
+    { 
+        char buf[200];
+        sprintf(buf, "%s TO %s", $2, $4);
+        $$ = strdup(buf);
+    }
+;
 
 
 SendCmd:
-     SEND STRING TO STRING;
+    SEND STRING TO STRING 
+    { 
+        char buf[200];
+        sprintf(buf, "%s TO %s", $2, $4);
+        $$ = strdup(buf);
+    }
+;
 
 
 GenerateCmd:
-     GENERATE STRING;
+    GENERATE STRING { $$ = $2; }
+;
 
 
 ExportCmd:
-     EXPORT STRING;
+    EXPORT STRING { $$ = $2; }
+;
 
 
 Dependency:
-    AFTER IDENTIFIER  { printf("  Depends on: %s\n", $2); }
-    | BEFORE IDENTIFIER { printf("  Depends on: %s\n", $2); }
+    AFTER IDENTIFIER  { g_dependency = strdup($2); }
+    | BEFORE IDENTIFIER { g_dependency = strdup($2); }
 ;
 
 
 Condition:
-    IF ConditionType { printf("  Condition: %s\n", $2); }
+    IF ConditionType { g_condition = strdup($2); }
 ;
 
 
@@ -125,7 +161,9 @@ ConditionType:
 ScheduleStmt:
     ScheduleTime AT TIME
     {
-        printf("  Schedule: ... AT %s\n", $3);
+        char buf[100];
+        sprintf(buf, "%s AT %s", $1, $3);
+        g_schedule = strdup(buf);
     }
 ;
 
