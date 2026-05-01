@@ -37,28 +37,79 @@ int yylex();
 %token SATURDAY
 %token LBRACE RBRACE
 
-%%
+%% 
 
 Task:
-    TASK IDENTIFIER LBRACE RunStmt ScheduleStmt RBRACE
+    TASK IDENTIFIER LBRACE Command TaskBodyOpt RBRACE
     {
-        printf("Parsed TASK: %s\n", $2);
+        printf("Executing TASK: %s\n", $2);
     }
 ;
+    
+TaskBodyOpt: 
+     TaskBody | /* empty */;
 
-RunStmt:
-    RUN STRING
-    {
-    }
-;
+TaskBody:
+     ScheduleOpt DependencyOpt ConditionOpt;
+
+ScheduleOpt:
+     ScheduleStmt | /* empty */;
+     
+
+DependencyOpt:    
+     Dependency | /* empty */;
+      
+      
+ConditionOpt:     
+     Condition | /* empty */;
+
+Command:
+     RunCmd | MoveCmd | GenerateCmd | ExportCmd | SendCmd;
+
+
+RunCmd:
+     RUN STRING;
+
+
+MoveCmd:
+     MOVE STRING TO STRING;
+
+
+SendCmd:
+     SEND STRING TO STRING;
+
+
+GenerateCmd:
+     GENERATE STRING;
+
+
+ExportCmd:
+     EXPORT STRING;
+
+
+Dependency:
+     AFTER IDENTIFIER | BEFORE IDENTIFIER;
+
+
+Condition:
+     IF ConditionType;
+
+
+ConditionType:
+     SUCCESS | FAILED;
+
 
 ScheduleStmt:
-    EVERY DAY AT TIME
-    {
-        printf(" Schedule at: %s\n", $4);
-    }
-;
+     ScheduleTime AT TIME;
 
+    
+ScheduleTime:
+     EVERY DAY | EVERY WEEK ON DayOfWeek;
+
+
+DayOfWeek:
+     SUNDAY | MONDAY | TUESDAY | WEDNESDAY | THURSDAY | FRIDAY | SATURDAY;
+        
 %%
 
 void yyerror(const char *s) {
@@ -66,5 +117,6 @@ void yyerror(const char *s) {
 }
 
 int main() {
+    printf("--- Execution START ---");
     return yyparse();
 }
