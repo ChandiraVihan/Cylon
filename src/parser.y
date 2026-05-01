@@ -73,7 +73,7 @@ task_list:
 Task:
     TASK IDENTIFIER LBRACE Command TaskBodyOpt RBRACE
     {
-        printf("Executing Task: %s\n", $2);
+        printf("\nExecuting Task: %s\n", $2);
         printf("  Script: %s\n", $4);
         if(g_schedule)  printf("  Schedule: %s\n", g_schedule);
         if(g_dependency) printf("  Depends on: %s\n", g_dependency);
@@ -164,13 +164,8 @@ ScheduleStmt:
         char buf[100];
         sprintf(buf, "%s AT %s", $1, $3);
         g_schedule = strdup(buf);
+        free($1);
     }
-;
-
-    
-ScheduleTime:
-    EVERY DAY        { $$ = "EVERY DAY"; }
-    | EVERY WEEK ON DayOfWeek { $$ = "EVERY WEEK ON ..."; }
 ;
 
 
@@ -183,7 +178,22 @@ DayOfWeek:
     | FRIDAY    { $$ = "FRIDAY"; }
     | SATURDAY  { $$ = "SATURDAY"; }
 ;
-        
+
+
+ScheduleTime:
+    EVERY DAY        
+    { 
+        $$ = strdup("EVERY DAY"); 
+    }
+    | EVERY WEEK ON DayOfWeek 
+    { 
+        char buf[100];
+        sprintf(buf, "EVERY WEEK ON %s", $4);
+        $$ = strdup(buf); 
+    }
+;
+
+      
 %%
 
 

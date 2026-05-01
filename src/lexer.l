@@ -16,7 +16,9 @@
 "BEFORE"      { return BEFORE; }
 "IF"          { return IF; }
 "SUCCESS"     { return SUCCESS; }
+"success"     { return SUCCESS; }
 "FAILED"      { return FAILED; }
+"failed"      { return FAILED; }
 "EVERY"       { return EVERY; }
 "DAY"         { return DAY; }
 "AT"          { return AT; }
