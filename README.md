@@ -11,7 +11,7 @@
 - Report Generation - generate and export a report
 - File Transfer - move files between locations ( FTP, SCP )
 - Service Restart - restart a system service or process
-- API calls - send and HTTP request to an external enspoint
+- API calls - send and HTTP request to an external endpoint
 
 ## Possible workflows
 
