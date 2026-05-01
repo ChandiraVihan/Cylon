@@ -8,7 +8,12 @@ int yylex();
 
 %union {
     char* str;
+
 }
+
+%type <str> ScheduleTime
+%type <str> ConditionType
+%type <str> DayOfWeek
 
 %token <str> IDENTIFIER STRING TIME
 %token TASK
@@ -78,7 +83,11 @@ Command:
 
 
 RunCmd:
-     RUN STRING;
+    RUN STRING
+    {
+        printf("  Script: %s\n", $2);
+    }
+;
 
 
 MoveCmd:
@@ -110,12 +119,17 @@ ConditionType:
 
 
 ScheduleStmt:
-     ScheduleTime AT TIME;
+    ScheduleTime AT TIME
+    {
+        printf("  Schedule: ... AT %s\n", $3);
+    }
+;
 
     
 ScheduleTime:
-     EVERY DAY | EVERY WEEK ON DayOfWeek;
-
+    EVERY DAY        { $$ = "EVERY DAY"; }
+    | EVERY WEEK ON DayOfWeek { $$ = "EVERY WEEK ON ..."; }
+;
 
 DayOfWeek:
      SUNDAY | MONDAY | TUESDAY | WEDNESDAY | THURSDAY | FRIDAY | SATURDAY;
