@@ -139,10 +139,11 @@ int main() {
     );
     
 
-    int result = yyparse();
-    
     printf("Parsing TaskLang++ input...\n\n");
     printf("--- EXECUTION START ---\n");
+    int result = yyparse();
+    
+
 
     if (result == 0) {
         printf("\n--- EXECUTION COMPLETE ---\n");
