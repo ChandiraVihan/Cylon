@@ -2,13 +2,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdbool.h>
 
 char* g_schedule = NULL;
 char* g_dependency = NULL;
 char* g_condition = NULL;
 char* g_cmd_label  = "Script";
+char* task_names[100]; 
+int task_count = 0;
 
+// Function to check if a name already exists
+bool is_duplicate(char* name) {
+    for (int i = 0; i < task_count; i++) {
+        if (strcmp(task_names[i], name) == 0) return true;
+    }
+    return false;
+}
+
+// Function to check if a dependency target was ever defined
+bool is_defined(char* name) {
+    for (int i = 0; i < task_count; i++) {
+        if (strcmp(task_names[i], name) == 0) return true;
+    }
+    return false;
+}
 
 void yyerror(const char *s);
 int yylex();
@@ -74,11 +91,23 @@ task_list:
 Task:
     TASK IDENTIFIER LBRACE Command TaskBodyOpt RBRACE
     {
+         if (is_duplicate($2)) {
+            fprintf(stderr, "SEMANTIC ERROR: Duplicate task name '%s' found.\n", $2);
+        } else {
+            
+            task_names[task_count++] = strdup($2);
+
+        
+            if (g_dependency && !is_defined(g_dependency)) {
+                fprintf(stderr, "SEMANTIC ERROR: Task '%s' depends on undefined task '%s'.\n", $2, g_dependency);
+            }
+
         printf("\nExecuting Task: %s\n", $2);
         printf("  %s: %s\n", g_cmd_label, $4);
         if(g_schedule)  printf("  Schedule: %s\n", g_schedule);
         if(g_dependency) printf("  Depends on: %s\n", g_dependency);
         if(g_condition)  printf("  Condition: %s\n", g_condition);
+        }
         g_schedule = NULL;
         g_dependency = NULL;
         g_condition = NULL;
