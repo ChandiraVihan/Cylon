@@ -2,30 +2,74 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdbool.h>
+
+/* ── Task registry ── */
+#define MAX_TASKS 100
 
 char* g_schedule = NULL;
 char* g_dependency = NULL;
 char* g_condition = NULL;
 char* g_cmd_label  = "Script";
-char* task_names[100]; 
-int task_count = 0;
 
-// Function to check if a name already exists
-bool is_duplicate(char* name) {
-    for (int i = 0; i < task_count; i++) {
-        if (strcmp(task_names[i], name) == 0) return true;
-    }
-    return false;
+
+/* Store every task name and its dependency */
+char* task_names[MAX_TASKS];
+char* task_deps[MAX_TASKS];   /* task_deps[i] = what task_names[i] depends on, or NULL */
+int   task_count = 0;
+
+
+/* ── Duplicate check ── */
+int is_duplicate(char* name) {
+    for (int i = 0; i < task_count; i++)
+        if (strcmp(task_names[i], name) == 0) return 1;
+    return 0;
 }
 
-// Function to check if a dependency target was ever defined
-bool is_defined(char* name) {
-    for (int i = 0; i < task_count; i++) {
-        if (strcmp(task_names[i], name) == 0) return true;
-    }
-    return false;
+
+/* ── Find index of a task by name, -1 if not found ── */
+int find_task(char* name) {
+    for (int i = 0; i < task_count; i++)
+        if (strcmp(task_names[i], name) == 0) return i;
+    return -1;
 }
+
+
+/* ── DFS cycle detection ──
+   visited: 0 = unvisited, 1 = in current path, 2 = fully processed */
+int dfs(int node, int* visited) {
+    if (visited[node] == 1) return 1;   /* back edge = cycle */
+    if (visited[node] == 2) return 0;   /* already safe */
+
+    visited[node] = 1;
+
+    if (task_deps[node] != NULL) {
+        int dep = find_task(task_deps[node]);
+        if (dep >= 0 && dfs(dep, visited)) return 1;
+    }
+
+    visited[node] = 2;
+    return 0;
+}
+
+
+/* ── Run cycle check across all tasks ── */
+void check_circular_dependencies() {
+    int visited[MAX_TASKS] = {0};
+    for (int i = 0; i < task_count; i++) {
+        if (visited[i] == 0) {
+            /* reset in-path markers before each DFS start */
+            int v[MAX_TASKS] = {0};
+            if (dfs(i, v)) {
+                fprintf(stderr, "\nERROR: Circular dependency detected involving task '%s'\n", task_names[i]);
+                exit(1);
+            }
+            /* merge visited info */
+            for (int j = 0; j < task_count; j++)
+                if (v[j] == 2) visited[j] = 2;
+        }
+    }
+}
+
 
 extern int yylineno;
 extern FILE *yyin;
@@ -83,6 +127,10 @@ int yylex();
 
 cylon:
     task_list
+    {
+        /* After all tasks parsed - run all semantic checks */
+        check_circular_dependencies();
+    }
 ;
 
 task_list:
@@ -94,28 +142,35 @@ task_list:
 Task:
     TASK IDENTIFIER LBRACE Command TaskBodyOpt RBRACE
     {
-         if (is_duplicate($2)) {
-            fprintf(stderr, "SEMANTIC ERROR: Duplicate task name '%s' found.\n", $2);
-        } else {
-            
-            task_names[task_count++] = strdup($2);
+        /* Duplicate task name check */
+        if (is_duplicate($2)) {
+            fprintf(stderr, "SEMANTIC ERROR at line %d: Duplicate task name '%s'\n", yylineno, $2);
+            exit(1);
+        }
 
-        
-            if (g_dependency && !is_defined(g_dependency)) {
-                fprintf(stderr, "SEMANTIC ERROR: Task '%s' depends on undefined task '%s'.\n", $2, g_dependency);
-            }
+        /* Undefined dependency check */
+        if (g_dependency != NULL && find_task(g_dependency) < 0) {
+            fprintf(stderr, "SEMANTIC ERROR at line %d: Task '%s' depends on undefined task '%s'\n", yylineno, $2, g_dependency);
+            exit(1);
+        }
 
+        /* Register task in table */
+        task_names[task_count] = strdup($2);
+        task_deps[task_count]  = g_dependency ? strdup(g_dependency) : NULL;
+        task_count++;
+
+        /* Print execution details */
         printf("\nExecuting Task: %s\n", $2);
         printf("  %s: %s\n", g_cmd_label, $4);
-        if(g_schedule)  printf("  Schedule: %s\n", g_schedule);
-        if(g_dependency) printf("  Depends on: %s\n", g_dependency);
-        if(g_condition)  printf("  Condition: %s\n", g_condition);
-        }
-        g_schedule = NULL;
-        g_dependency = NULL;
-        g_condition = NULL;
-        g_cmd_label  = "Script";
+        if (g_schedule)   printf("  Schedule: %s\n",   g_schedule);
+        if (g_dependency) printf("  Depends on: %s\n", g_dependency);
+        if (g_condition)  printf("  Condition: %s\n",  g_condition);
 
+        /* Reset globals for next task */
+        g_schedule   = NULL;
+        g_dependency = NULL;
+        g_condition  = NULL;
+        g_cmd_label  = "Script";
     }
 ;
 
