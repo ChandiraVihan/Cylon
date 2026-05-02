@@ -27,6 +27,9 @@ bool is_defined(char* name) {
     return false;
 }
 
+extern int yylineno;
+extern FILE *yyin;
+
 void yyerror(const char *s);
 int yylex();
 %}
@@ -249,10 +252,11 @@ ScheduleTime:
 
 
 void yyerror(const char *s) {
-    fprintf(stderr, "Error: %s\n", s);
+    fprintf(stderr, "Syntax error at line %d: %s\n", yylineno, s);
 }
 
-int main() {
+
+int main(int argc, char **argv) {
     printf("\n");
     printf(
         " ██████╗██╗   ██╗██╗      ██████╗ ███╗   ██╗\n"
@@ -264,11 +268,24 @@ int main() {
     );
     
 
+        /* File input support - accept optional filename argument */
+    if (argc == 2) {
+        yyin = fopen(argv[1], "r");
+        if (yyin == NULL) {
+            fprintf(stderr, "ERROR: Could not open file '%s'\n", argv[1]);
+            return 1;
+        }
+    }
+
+
     printf("Parsing TaskLang++ input...\n\n");
     printf("--- EXECUTION START ---\n");
     int result = yyparse();
     
 
+    if (argc == 2 && yyin != NULL) {
+        fclose(yyin);
+    }
 
     if (result == 0) {
         printf("\n--- EXECUTION COMPLETE ---\n");
@@ -276,4 +293,5 @@ int main() {
         printf("\n--- EXECUTION FAILED ---\n");
     }
     return result;
+    
 }
