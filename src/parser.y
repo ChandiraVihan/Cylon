@@ -73,7 +73,7 @@ void check_circular_dependencies() {
 
 extern int yylineno;
 extern FILE *yyin;
-
+void run_interactive(void); 
 void yyerror(const char *s);
 int yylex();
 %}
@@ -312,18 +312,14 @@ void yyerror(const char *s) {
 
 
 int main(int argc, char **argv) {
-    printf("\n");
-    printf(
-        " ██████╗██╗   ██╗██╗      ██████╗ ███╗   ██╗\n"
-        "██╔════╝╚██╗ ██╔╝██║     ██╔═══██╗████╗  ██║\n"
-        "██║      ╚████╔╝ ██║     ██║   ██║██╔██╗ ██║\n"
-        "██║       ╚██╔╝  ██║     ██║   ██║██║╚██╗██║\n"
-        "╚██████╗   ██║   ███████╗╚██████╔╝██║ ╚████║\n"
-        " ╚═════╝   ╚═╝   ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝\n\n"
-    );
-    
 
-        /* File input support - accept optional filename argument */
+    /* Interactive mode — no arguments */
+    if (argc == 1) {
+        run_interactive();
+        return 0;
+    }
+
+    /* File mode — only prints banner here */
     if (argc == 2) {
         yyin = fopen(argv[1], "r");
         if (yyin == NULL) {
@@ -332,15 +328,20 @@ int main(int argc, char **argv) {
         }
     }
 
-
+    /* Banner and parsing output only for file mode */
+    printf("\n");
+    printf(" ██████╗██╗   ██╗██╗      ██████╗ ███╗   ██╗\n");
+    printf("██╔════╝╚██╗ ██╔╝██║     ██╔═══██╗████╗  ██║\n");
+    printf("██║      ╚████╔╝ ██║     ██║   ██║██╔██╗ ██║\n");
+    printf("██║       ╚██╔╝  ██║     ██║   ██║██║╚██╗██║\n");
+    printf("╚██████╗   ██║   ███████╗╚██████╔╝██║ ╚████║\n");
+    printf(" ╚═════╝   ╚═╝   ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝\n\n");
     printf("Parsing TaskLang++ input...\n\n");
     printf("--- EXECUTION START ---\n");
-    int result = yyparse();
-    
 
-    if (argc == 2 && yyin != NULL) {
-        fclose(yyin);
-    }
+    int result = yyparse();
+
+    if (argc == 2 && yyin != NULL) fclose(yyin);
 
     if (result == 0) {
         printf("\n--- EXECUTION COMPLETE ---\n");
@@ -348,5 +349,4 @@ int main(int argc, char **argv) {
         printf("\n--- EXECUTION FAILED ---\n");
     }
     return result;
-    
 }
