@@ -1,0 +1,5 @@
+site_name: Cylon Documentation
+site_description: A DSL Designed to Automate Task Scheduling and Orchestration.
+
+theme:
+  name: material

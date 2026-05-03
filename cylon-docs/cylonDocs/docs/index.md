@@ -8,7 +8,7 @@ sidebar_label: cylon
 
 ## Introduction
 
-TaskLang++ is a domain-specific language for defining automated workflows with:
+Cylon is a domain-specific language for defining automated workflows with:
 
 - Task execution
 - Scheduling
@@ -135,3 +135,10 @@ TASK cleanup {
  - No retries
 
  - Basic condition support only
+
+
+
+
+ 
+
+
