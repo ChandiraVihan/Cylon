@@ -1,0 +1,8 @@
+TASK prepareDB {
+    RUN "prepare.sh"
+    EVERY DAY AT 01:00
+}
+TASK runBackup {
+    RUN "backup.sh"
+    BEFORE prepareDB
+}

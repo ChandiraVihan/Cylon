@@ -1,0 +1,4 @@
+TASK makeReport {
+    GENERATE "report.pdf"
+    EVERY WEEK ON MONDAY AT 09:00
+}

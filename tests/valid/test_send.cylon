@@ -1,0 +1,4 @@
+TASK notifyAdmin {
+    SEND "alert.txt" TO "admin@email.com"
+    EVERY DAY AT 08:00
+}

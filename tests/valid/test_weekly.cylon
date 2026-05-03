@@ -1,0 +1,4 @@
+TASK weeklyCleanup {
+    RUN "cleanup.sh"
+    EVERY WEEK ON SUNDAY AT 03:00
+}

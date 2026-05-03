@@ -1,0 +1,4 @@
+TASK transferFiles {
+    MOVE "source.zip" TO "backup/"
+    EVERY DAY AT 03:00
+}

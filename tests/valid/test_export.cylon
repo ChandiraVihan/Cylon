@@ -1,0 +1,4 @@
+TASK exportData {
+    EXPORT "output.csv"
+    EVERY DAY AT 01:00
+}
