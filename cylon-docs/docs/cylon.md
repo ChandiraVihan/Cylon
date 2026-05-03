@@ -1,10 +1,10 @@
 ---
 id: cylon
 title: TaskLang++ DSL
-sidebar_label: TaskLang++
+sidebar_label: cylon
 ---
 
-# TaskLang++ DSL
+# Cylon DSL
 
 ## Introduction
 
@@ -21,7 +21,7 @@ TaskLang++ is a domain-specific language for defining automated workflows with:
 
 ### Example
 
-```text
+```
 TASK backupDB {
     RUN "backup.sh"
     EVERY DAY AT 02:00
@@ -50,6 +50,7 @@ TASK cleanup {
 
 ## Syntax (EBNF)
 
+```
 <TASK> ::= "TASK" <Identifier> "{" <Command> <TaskBodyOpt> "}"
 
 <Command> ::= <RunCmd> | <MoveCmd> | <SendCmd> | <GenerateCmd> | <ExportCmd>
@@ -64,4 +65,73 @@ TASK cleanup {
 <Condition> ::= "IF" ("SUCCESS" | "FAILED")
 
 <ScheduleStmt> ::= ("EVERY DAY" | "EVERY WEEK ON" <Day>) "AT" <TIME>
+```
 
+## Commands
+
+ - RUN: RUN "script.sh"
+
+ - MOVE: MOVE "source" TO "destination"
+
+ - SEND: SEND "message" TO "user"
+
+ - GENERATE: GENERATE "file.pdf"
+
+ - EXPORT: EXPORT "data.csv"
+
+
+## Scheduling
+
+ - Daily: EVERY DAY AT 02:00
+
+ - Weekly: EVERY WEEK ON SUNDAY AT 03:00
+
+
+## Dependencies & Conditions
+
+ - Dependencies: AFTER taskName or BEFORE taskName
+
+ - Conditions: IF SUCCESS or IF FAILED
+
+
+## Lexical Rules
+
+ - Identifier: [a-zA-Z][a-zA-Z0-9]*
+
+ - String: "any text"
+
+ - Time: HH:MM
+
+
+## Execution Model
+
+ 1. Parse all tasks
+
+ 2. Store task definitions
+
+ 3. Validate:
+
+   - Duplicate task names
+
+   - Undefined dependencies
+
+   - Circular dependencies
+
+ 4. Execute tasks
+
+
+## Errors
+
+ - Duplicate Task: Duplicate task name
+
+ - Undefined Dependency: Task depends on undefined task
+
+ -Circular Dependency: Circular dependency detected
+
+
+## Limitations
+ - No parallel execution
+
+ - No retries
+
+ - Basic condition support only
