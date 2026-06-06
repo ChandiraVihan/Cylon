@@ -31,7 +31,12 @@
 "THURSDAY"    { return THURSDAY; }
 "FRIDAY"      { return FRIDAY; }
 "SATURDAY"    { return SATURDAY; }
-
+"MINUTE"      { return MINUTE; }
+"MINUTES"     { return MINUTE; }
+"HOUR"        { return HOUR; }
+"HOURS"       { return HOUR; }
+"SECOND"      { return SECOND; }
+"SECONDS"     { return SECOND; }
 "{"           { return LBRACE; }
 "}"           { return RBRACE; }
 
