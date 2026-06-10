@@ -1,4 +1,4 @@
 TASK healthCheck {
-    RUN "check_system.sh"
+    RUN "check_ram.sh"
     EVERY 5 MINUTES
 }

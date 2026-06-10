@@ -11,7 +11,7 @@ TEST_DIR = tests
 all: $(TARGET)
 
 $(TARGET): $(SRC_DIR)/lex.yy.c $(SRC_DIR)/parser.tab.c
-	$(CC) $(SRC_DIR)/lex.yy.c $(SRC_DIR)/parser.tab.c $(SRC_DIR)/frontend.c -o $(SRC_DIR)/$(TARGET)
+	$(CC) $(SRC_DIR)/lex.yy.c $(SRC_DIR)/parser.tab.c $(SRC_DIR)/frontend.c $(SRC_DIR)/executor.c -o $(SRC_DIR)/$(TARGET)
 
 $(SRC_DIR)/parser.tab.c $(SRC_DIR)/parser.tab.h: $(SRC_DIR)/parser.y
 	$(YACC) -d $(SRC_DIR)/parser.y -o $(SRC_DIR)/parser.tab.c

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "executor.h"
 
 /* ── Task registry ── */
 #define MAX_TASKS 100
@@ -76,6 +77,18 @@ extern FILE *yyin;
 void run_interactive(void); 
 void yyerror(const char *s);
 int yylex();
+
+/* Helper to strip surrounding double-quotes from lexer STRING tokens */
+char* strip_quotes(const char* s) {
+    if (!s) return NULL;
+    size_t len = strlen(s);
+    if (len >= 2 && s[0] == '"' && s[len-1] == '"') {
+        char *out = strdup(s+1);
+        out[len-2] = '\0';
+        return out;
+    }
+    return strdup(s);
+}
 %}
 
 %union {
@@ -171,6 +184,52 @@ Task:
         if (g_schedule)   printf("  Schedule: %s\n",   g_schedule);
         if (g_dependency) printf("  Depends on: %s\n", g_dependency);
         if (g_condition)  printf("  Condition: %s\n",  g_condition);
+
+        /* Execute based on command label */
+        if (strcmp(g_cmd_label, "RUN") == 0) {
+            char *arg = strip_quotes($4);
+            int rc = run_script(arg);
+            printf("  Result: %d\n", rc);
+            free(arg);
+        } else if (strcmp(g_cmd_label, "Move") == 0) {
+            char *cmd = strdup($4);
+            char *sep = strstr(cmd, " TO ");
+            if (sep) {
+                *sep = '\0';
+                char *src = strip_quotes(cmd);
+                char *dst = strip_quotes(sep + 4);
+                int rc = move_file(src, dst);
+                printf("  Result: %d\n", rc);
+                free(src); free(dst);
+            }
+            free(cmd);
+        } else if (strcmp(g_cmd_label, "Send") == 0) {
+            char *cmd = strdup($4);
+            char *sep = strstr(cmd, " TO ");
+            if (sep) {
+                *sep = '\0';
+                char *msg = strip_quotes(cmd);
+                char *recipient = strip_quotes(sep + 4);
+                int rc = send_message(msg, recipient);
+                printf("  Result: %d\n", rc);
+                free(msg); free(recipient);
+            }
+            free(cmd);
+        } else if (strcmp(g_cmd_label, "Generate") == 0) {
+            char *arg = strip_quotes($4);
+            int rc = generate_report(arg);
+            printf("  Result: %d\n", rc);
+            free(arg);
+        } else if (strcmp(g_cmd_label, "Export") == 0) {
+            char *arg = strip_quotes($4);
+            int rc = export_file(arg);
+            printf("  Result: %d\n", rc);
+            free(arg);
+        } else if (strcmp(g_cmd_label, "Notify") == 0) {
+            char *arg = strip_quotes($4);
+            notify(arg);
+            free(arg);
+        }
 
         /* Reset globals for next task */
         g_schedule   = NULL;
@@ -312,9 +371,9 @@ DayOfWeek:
 ;
 
 frequencyUnit:
-    MINUTE  { $$ = "MINUTE(S)"; }
-    | HOUR   { $$ = "HOUR(S)"; }
-    | SECOND { $$ = "SECOND(S)"; }
+    MINUTE  { $$ = "MINUTES"; }
+    | HOUR   { $$ = "HOURS"; }
+    | SECOND { $$ = "SECONDS"; }
 
 
 ScheduleTime:
