@@ -3,6 +3,9 @@
 #include <string.h>
 %}
 
+%option yylineno
+
+
 %%
 
 "TASK"        { return TASK; }
@@ -12,6 +15,8 @@
 "TO"          { return TO; }
 "GENERATE"    { return GENERATE; }
 "EXPORT"      { return EXPORT; }
+"NOTIFY"      { return NOTIFY; }
+"ON_FAILURE" { return ON_FAILURE; }
 "AFTER"       { return AFTER; }
 "BEFORE"      { return BEFORE; }
 "IF"          { return IF; }
@@ -39,6 +44,11 @@
 "SECONDS"     { return SECOND; }
 "{"           { return LBRACE; }
 "}"           { return RBRACE; }
+
+[0-9]+       { 
+                yylval.num = atoi(yytext); 
+                return NUMBER; 
+             }
 
 [0-9]{2}":"[0-9]{2} {
                 yylval.str = strdup(yytext);

@@ -1,0 +1,4 @@
+TASK healthCheck {
+    RUN "check_system.sh"
+    EVERY 5 MINUTES
+}

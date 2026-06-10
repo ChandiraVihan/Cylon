@@ -80,7 +80,7 @@ int yylex();
 
 %union {
     char* str;
-
+    int num;
 }
 
 %type <str> Command
@@ -89,12 +89,15 @@ int yylex();
 %type <str> SendCmd
 %type <str> GenerateCmd
 %type <str> ExportCmd
+%type <str> NotifyCmd
 %type <str> ScheduleStmt
 %type <str> ScheduleTime
 %type <str> ConditionType
 %type <str> DayOfWeek
+%type <str> frequencyUnit
 
 %token <str> IDENTIFIER STRING TIME
+%token <num> NUMBER
 %token TASK
 %token RUN 
 %token EVERY
@@ -106,6 +109,7 @@ int yylex();
 %token TO
 %token GENERATE
 %token EXPORT
+%token NOTIFY
 %token AFTER
 %token BEFORE
 %token IF
@@ -119,9 +123,11 @@ int yylex();
 %token THURSDAY
 %token FRIDAY
 %token SATURDAY
+%token ON_FAILURE
+%token HOUR
+%token MINUTE
+%token SECOND
 %token LBRACE RBRACE
-
-
 
 %% 
 
@@ -194,6 +200,7 @@ Command:
     | GenerateCmd { $$ = $1; }
     | ExportCmd  { $$ = $1; }
     | SendCmd    { $$ = $1; }
+    | NotifyCmd  { $$ = $1; }
 ;
 
 
@@ -250,6 +257,15 @@ ExportCmd:
     }
 ;
 
+/* Notify User — NOTIFY "message" */
+NotifyCmd:
+    NOTIFY STRING
+    {
+        g_cmd_label = "Notify";
+        $$ = $2;
+    }
+;
+
 
 Dependency:
     AFTER IDENTIFIER  { g_dependency = strdup($2); }
@@ -275,6 +291,13 @@ ScheduleStmt:
         g_schedule = strdup(buf);
         free($1);
     }
+    | EVERY NUMBER frequencyUnit
+    {
+        char buf[100];
+        sprintf(buf, "EVERY %d %s", $2, $3);
+        g_schedule = strdup(buf);
+    }
+
 ;
 
 
@@ -287,6 +310,11 @@ DayOfWeek:
     | FRIDAY    { $$ = "FRIDAY"; }
     | SATURDAY  { $$ = "SATURDAY"; }
 ;
+
+frequencyUnit:
+    MINUTE  { $$ = "MINUTE(S)"; }
+    | HOUR   { $$ = "HOUR(S)"; }
+    | SECOND { $$ = "SECOND(S)"; }
 
 
 ScheduleTime:
