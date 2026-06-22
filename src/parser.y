@@ -3,48 +3,64 @@
 #include <stdlib.h>
 #include <string.h>
 #include "executor.h"
+#include "tasks.h"
 
-/* ── Task registry ── */
-#define MAX_TASKS 100
+/* ── Per-task globals — reset after each TASK block ── */
+CommandType  g_cmd_type          = CMD_RUN;
+char         g_arg1[256]         = {0};
+char         g_arg2[256]         = {0};
+ScheduleType g_sched_type        = SCHED_NONE;
+int          g_interval_seconds  = 0;
+int          g_hour              = 0;
+int          g_minute            = 0;
+int          g_weekday           = 0;
+DepType      g_dep_type          = DEP_NONE;
+char         g_dep_target[64]    = {0};
+ConditionType g_condition_type   = COND_NONE;
 
-char* g_schedule = NULL;
-char* g_dependency = NULL;
-char* g_condition = NULL;
-char* g_cmd_label  = "Script";
+
+/* ── Reset all globals for next task ── */
+void reset_globals() {
+    g_cmd_type         = CMD_RUN;
+    g_arg1[0]          = '\0';
+    g_arg2[0]          = '\0';
+    g_sched_type       = SCHED_NONE;
+    g_interval_seconds = 0;
+    g_hour             = 0;
+    g_minute           = 0;
+    g_weekday          = 0;
+    g_dep_type         = DEP_NONE;
+    g_dep_target[0]    = '\0';
+    g_condition_type   = COND_NONE;
+}
 
 
-/* Store every task name and its dependency */
-char* task_names[MAX_TASKS];
-char* task_deps[MAX_TASKS];   /* task_deps[i] = what task_names[i] depends on, or NULL */
-int   task_count = 0;
-
-
-/* ── Duplicate check ── */
-int is_duplicate(char* name) {
+/* ── Duplicate check — reads from tasks[] ── */
+int is_duplicate(char *name) {
     for (int i = 0; i < task_count; i++)
-        if (strcmp(task_names[i], name) == 0) return 1;
+        if (strcmp(tasks[i].name, name) == 0) return 1;
     return 0;
 }
 
 
-/* ── Find index of a task by name, -1 if not found ── */
-int find_task(char* name) {
+/* ── Find task index by name, -1 if not found ── */
+int find_task(char *name) {
     for (int i = 0; i < task_count; i++)
-        if (strcmp(task_names[i], name) == 0) return i;
+        if (strcmp(tasks[i].name, name) == 0) return i;
     return -1;
 }
 
 
 /* ── DFS cycle detection ──
    visited: 0 = unvisited, 1 = in current path, 2 = fully processed */
-int dfs(int node, int* visited) {
-    if (visited[node] == 1) return 1;   /* back edge = cycle */
-    if (visited[node] == 2) return 0;   /* already safe */
+int dfs(int node, int *visited) {
+    if (visited[node] == 1) return 1;   /* back edge = cycle      */
+    if (visited[node] == 2) return 0;   /* already fully processed */
 
     visited[node] = 1;
 
-    if (task_deps[node] != NULL) {
-        int dep = find_task(task_deps[node]);
+    if (tasks[node].dep_target[0] != '\0') {
+        int dep = find_task(tasks[node].dep_target);
         if (dep >= 0 && dfs(dep, visited)) return 1;
     }
 
@@ -58,13 +74,12 @@ void check_circular_dependencies() {
     int visited[MAX_TASKS] = {0};
     for (int i = 0; i < task_count; i++) {
         if (visited[i] == 0) {
-            /* reset in-path markers before each DFS start */
             int v[MAX_TASKS] = {0};
             if (dfs(i, v)) {
-                fprintf(stderr, "\nERROR: Circular dependency detected involving task '%s'\n", task_names[i]);
+                fprintf(stderr, "\nERROR: Circular dependency detected involving task '%s'\n",
+                        tasks[i].name);
                 exit(1);
             }
-            /* merge visited info */
             for (int j = 0; j < task_count; j++)
                 if (v[j] == 2) visited[j] = 2;
         }
@@ -72,30 +87,32 @@ void check_circular_dependencies() {
 }
 
 
-extern int yylineno;
+extern int  yylineno;
 extern FILE *yyin;
-void run_interactive(void); 
+void run_interactive(void);
 void yyerror(const char *s);
-int yylex();
+int  yylex(void);
 
-/* Helper to strip surrounding double-quotes from lexer STRING tokens */
-char* strip_quotes(const char* s) {
+/* Strip surrounding double-quotes from a lexer STRING token */
+char *strip_quotes(const char *s) {
     if (!s) return NULL;
     size_t len = strlen(s);
     if (len >= 2 && s[0] == '"' && s[len-1] == '"') {
-        char *out = strdup(s+1);
-        out[len-2] = '\0';
+        char *out = strdup(s + 1);
+        out[len - 2] = '\0';
         return out;
     }
     return strdup(s);
 }
 %}
 
+/* ── Value types ── */
 %union {
-    char* str;
-    int num;
+    char *str;
+    int   num;
 }
 
+/* ── Non-terminal types ── */
 %type <str> Command
 %type <str> RunCmd
 %type <str> MoveCmd
@@ -103,148 +120,116 @@ char* strip_quotes(const char* s) {
 %type <str> GenerateCmd
 %type <str> ExportCmd
 %type <str> NotifyCmd
-%type <str> ScheduleStmt
-%type <str> ScheduleTime
-%type <str> ConditionType
-%type <str> DayOfWeek
-%type <str> frequencyUnit
+%type <num> DayOfWeek
+%type <num> frequencyUnit
 
+/* ── Tokens ── */
 %token <str> IDENTIFIER STRING TIME
 %token <num> NUMBER
 %token TASK
-%token RUN 
-%token EVERY
-%token DAY
-%token AT
-%token ON
-%token MOVE
-%token SEND
-%token TO
-%token GENERATE
-%token EXPORT
-%token NOTIFY
-%token AFTER
-%token BEFORE
-%token IF
-%token SUCCESS
-%token FAILED
-%token WEEK
-%token SUNDAY
-%token MONDAY
-%token TUESDAY
-%token WEDNESDAY
-%token THURSDAY
-%token FRIDAY
-%token SATURDAY
+%token RUN
+%token EVERY DAY WEEK AT ON
+%token MOVE SEND TO
+%token GENERATE EXPORT NOTIFY
+%token AFTER BEFORE
+%token IF SUCCESS FAILED
+%token SUNDAY MONDAY TUESDAY WEDNESDAY THURSDAY FRIDAY SATURDAY
 %token ON_FAILURE
-%token HOUR
-%token MINUTE
-%token SECOND
+%token HOUR MINUTE SECOND
 %token LBRACE RBRACE
 
-%% 
+%%
+
+/* ════════════════════════════════════════════════
+   Top level
+   ════════════════════════════════════════════════ */
 
 cylon:
     task_list
     {
-        /* After all tasks parsed - run all semantic checks */
         check_circular_dependencies();
     }
 ;
 
 task_list:
-     Task |
-     task_list Task
+    Task
+    | task_list Task
 ;
 
+
+/* ════════════════════════════════════════════════
+   Task block — parse into tasks[] struct
+   ════════════════════════════════════════════════ */
 
 Task:
     TASK IDENTIFIER LBRACE Command TaskBodyOpt RBRACE
     {
-        /* Duplicate task name check */
+        /* ── Semantic checks ── */
         if (is_duplicate($2)) {
-            fprintf(stderr, "SEMANTIC ERROR at line %d: Duplicate task name '%s'\n", yylineno, $2);
+            fprintf(stderr, "SEMANTIC ERROR at line %d: Duplicate task name '%s'\n",
+                    yylineno, $2);
             exit(1);
         }
 
-        /* Undefined dependency check */
-        if (g_dependency != NULL && find_task(g_dependency) < 0) {
-            fprintf(stderr, "SEMANTIC ERROR at line %d: Task '%s' depends on undefined task '%s'\n", yylineno, $2, g_dependency);
+        if (g_dep_target[0] != '\0' && find_task(g_dep_target) < 0) {
+            fprintf(stderr,
+                    "SEMANTIC ERROR at line %d: Task '%s' depends on undefined task '%s'\n",
+                    yylineno, $2, g_dep_target);
             exit(1);
         }
 
-        /* Register task in table */
-        task_names[task_count] = strdup($2);
-        task_deps[task_count]  = g_dependency ? strdup(g_dependency) : NULL;
+        /* ── Store into shared task list ── */
+        Task *t = &tasks[task_count];
+
+        strncpy(t->name, $2, sizeof(t->name) - 1);
+
+        t->cmd_type = g_cmd_type;
+        strncpy(t->arg1, g_arg1, sizeof(t->arg1) - 1);
+        strncpy(t->arg2, g_arg2, sizeof(t->arg2) - 1);
+
+        t->sched_type        = g_sched_type;
+        t->interval_seconds  = g_interval_seconds;
+        t->hour              = g_hour;
+        t->minute            = g_minute;
+        t->weekday           = g_weekday;
+
+        t->dep_type = g_dep_type;
+        strncpy(t->dep_target, g_dep_target, sizeof(t->dep_target) - 1);
+
+        t->condition      = g_condition_type;
+        t->enabled        = 1;
+        t->last_exit_code = -1;
+        t->next_run       = 0;   /* scheduler will set this in init_schedule() */
+
         task_count++;
 
-        /* Print execution details */
-        printf("\nExecuting Task: %s\n", $2);
-        printf("  %s: %s\n", g_cmd_label, $4);
-        if (g_schedule)   printf("  Schedule: %s\n",   g_schedule);
-        if (g_dependency) printf("  Depends on: %s\n", g_dependency);
-        if (g_condition)  printf("  Condition: %s\n",  g_condition);
+        /* ── Debug print ── */
+        printf("\n[PARSED] Task: %s\n", t->name);
+        printf("  Command : %d  arg1='%s'  arg2='%s'\n",
+               t->cmd_type, t->arg1, t->arg2);
+        if (t->sched_type != SCHED_NONE)
+            printf("  Schedule: type=%d interval=%d h=%d m=%d wday=%d\n",
+                   t->sched_type, t->interval_seconds,
+                   t->hour, t->minute, t->weekday);
+        if (t->dep_type != DEP_NONE)
+            printf("  Depends : %s\n", t->dep_target);
+        if (t->condition != COND_NONE)
+            printf("  Condition: %d\n", t->condition);
 
-        /* Execute based on command label */
-        if (strcmp(g_cmd_label, "RUN") == 0) {
-            char *arg = strip_quotes($4);
-            int rc = run_script(arg);
-            printf("  Result: %d\n", rc);
-            free(arg);
-        } else if (strcmp(g_cmd_label, "Move") == 0) {
-            char *cmd = strdup($4);
-            char *sep = strstr(cmd, " TO ");
-            if (sep) {
-                *sep = '\0';
-                char *src = strip_quotes(cmd);
-                char *dst = strip_quotes(sep + 4);
-                int rc = move_file(src, dst);
-                printf("  Result: %d\n", rc);
-                free(src); free(dst);
-            }
-            free(cmd);
-        } else if (strcmp(g_cmd_label, "Send") == 0) {
-            char *cmd = strdup($4);
-            char *sep = strstr(cmd, " TO ");
-            if (sep) {
-                *sep = '\0';
-                char *msg = strip_quotes(cmd);
-                char *recipient = strip_quotes(sep + 4);
-                int rc = send_message(msg, recipient);
-                printf("  Result: %d\n", rc);
-                free(msg); free(recipient);
-            }
-            free(cmd);
-        } else if (strcmp(g_cmd_label, "Generate") == 0) {
-            char *arg = strip_quotes($4);
-            int rc = generate_report(arg);
-            printf("  Result: %d\n", rc);
-            free(arg);
-        } else if (strcmp(g_cmd_label, "Export") == 0) {
-            char *arg = strip_quotes($4);
-            int rc = export_file(arg);
-            printf("  Result: %d\n", rc);
-            free(arg);
-        } else if (strcmp(g_cmd_label, "Notify") == 0) {
-            char *arg = strip_quotes($4);
-            notify(arg);
-            free(arg);
-        }
-
-        /* Reset globals for next task */
-        g_schedule   = NULL;
-        g_dependency = NULL;
-        g_condition  = NULL;
-        g_cmd_label  = "Script";
+        reset_globals();
+        free($2);
     }
 ;
 
 
- TaskBodyOpt:
+/* ════════════════════════════════════════════════
+   Task body — schedule / dependency / condition
+   ════════════════════════════════════════════════ */
+
+TaskBodyOpt:
     %empty
     | TaskBodyOpt TaskBody
 ;
-
 
 TaskBody:
     ScheduleStmt
@@ -253,170 +238,208 @@ TaskBody:
 ;
 
 
+/* ════════════════════════════════════════════════
+   Commands — set g_cmd_type + g_arg1/g_arg2
+   ════════════════════════════════════════════════ */
+
 Command:
-    RunCmd    { $$ = $1; }
-    | MoveCmd    { $$ = $1; }
+    RunCmd      { $$ = $1; }
+    | MoveCmd   { $$ = $1; }
+    | SendCmd   { $$ = $1; }
     | GenerateCmd { $$ = $1; }
-    | ExportCmd  { $$ = $1; }
-    | SendCmd    { $$ = $1; }
-    | NotifyCmd  { $$ = $1; }
+    | ExportCmd { $$ = $1; }
+    | NotifyCmd { $$ = $1; }
 ;
 
-
-/* Script Execution — RUN "script.py" */
 RunCmd:
     RUN STRING
     {
-        g_cmd_label = "RUN";
+        g_cmd_type = CMD_RUN;
+        char *s = strip_quotes($2);
+        strncpy(g_arg1, s, sizeof(g_arg1) - 1);
+        free(s);
         $$ = $2;
     }
 ;
 
-
-/* File Transfer — MOVE "src" TO "dest" */
 MoveCmd:
     MOVE STRING TO STRING
     {
-        g_cmd_label = "Move";
-        char buf[300];
-        sprintf(buf, "%s TO %s", $2, $4);
-        $$ = strdup(buf);
+        g_cmd_type = CMD_MOVE;
+        char *s = strip_quotes($2);
+        char *d = strip_quotes($4);
+        strncpy(g_arg1, s, sizeof(g_arg1) - 1);
+        strncpy(g_arg2, d, sizeof(g_arg2) - 1);
+        free(s); free(d);
+        $$ = $2;
     }
 ;
 
-
-/* Email Notification — SEND "msg" TO "recipient" */
 SendCmd:
     SEND STRING TO STRING
     {
-        g_cmd_label = "Send";
-        char buf[300];
-        sprintf(buf, "%s TO %s", $2, $4);
-        $$ = strdup(buf);
+        g_cmd_type = CMD_SEND;
+        char *s = strip_quotes($2);
+        char *d = strip_quotes($4);
+        strncpy(g_arg1, s, sizeof(g_arg1) - 1);
+        strncpy(g_arg2, d, sizeof(g_arg2) - 1);
+        free(s); free(d);
+        $$ = $2;
     }
 ;
 
-
-/* Report Generation — GENERATE "report.pdf" */
 GenerateCmd:
     GENERATE STRING
     {
-        g_cmd_label = "Generate";
+        g_cmd_type = CMD_GENERATE;
+        char *s = strip_quotes($2);
+        strncpy(g_arg1, s, sizeof(g_arg1) - 1);
+        free(s);
         $$ = $2;
     }
 ;
 
-
-/* Data Export — EXPORT "output.csv" */
 ExportCmd:
     EXPORT STRING
     {
-        g_cmd_label = "Export";
+        g_cmd_type = CMD_EXPORT;
+        char *s = strip_quotes($2);
+        strncpy(g_arg1, s, sizeof(g_arg1) - 1);
+        free(s);
         $$ = $2;
     }
 ;
 
-/* Notify User — NOTIFY "message" */
 NotifyCmd:
     NOTIFY STRING
     {
-        g_cmd_label = "Notify";
+        g_cmd_type = CMD_NOTIFY;
+        char *s = strip_quotes($2);
+        strncpy(g_arg1, s, sizeof(g_arg1) - 1);
+        free(s);
         $$ = $2;
     }
 ;
 
 
+/* ════════════════════════════════════════════════
+   Dependency
+   ════════════════════════════════════════════════ */
+
 Dependency:
-    AFTER IDENTIFIER  { g_dependency = strdup($2); }
-    | BEFORE IDENTIFIER { g_dependency = strdup($2); }
+    AFTER IDENTIFIER
+    {
+        g_dep_type = DEP_AFTER;
+        strncpy(g_dep_target, $2, sizeof(g_dep_target) - 1);
+        free($2);
+    }
+    | BEFORE IDENTIFIER
+    {
+        g_dep_type = DEP_BEFORE;
+        strncpy(g_dep_target, $2, sizeof(g_dep_target) - 1);
+        free($2);
+    }
 ;
 
+
+/* ════════════════════════════════════════════════
+   Condition
+   ════════════════════════════════════════════════ */
 
 Condition:
-    IF ConditionType { g_condition = strdup($2); }
+    IF SUCCESS { g_condition_type = COND_SUCCESS; }
+    | IF FAILED { g_condition_type = COND_FAILED; }
 ;
 
 
-ConditionType:
-    SUCCESS  { $$ = "success"; }
-    | FAILED { $$ = "failed"; }
-;
+/* ════════════════════════════════════════════════
+   Schedule
+   ════════════════════════════════════════════════ */
 
 ScheduleStmt:
-    ScheduleTime AT TIME
+    /* EVERY DAY AT 06:00 */
+    EVERY DAY AT TIME
     {
-        char buf[100];
-        sprintf(buf, "%s AT %s", $1, $3);
-        g_schedule = strdup(buf);
-        free($1);
+        g_sched_type = SCHED_DAILY;
+        sscanf($4, "%d:%d", &g_hour, &g_minute);
+        free($4);
     }
+
+    /* EVERY WEEK ON MONDAY AT 03:00 */
+    | EVERY WEEK ON DayOfWeek AT TIME
+    {
+        g_sched_type = SCHED_WEEKLY;
+        g_weekday    = $4;
+        sscanf($6, "%d:%d", &g_hour, &g_minute);
+        free($6);
+    }
+
+    /* EVERY 5 MINUTES / EVERY 2 HOURS / EVERY 30 SECONDS */
     | EVERY NUMBER frequencyUnit
     {
-        char buf[100];
-        sprintf(buf, "EVERY %d %s", $2, $3);
-        g_schedule = strdup(buf);
+        g_sched_type       = SCHED_INTERVAL;
+        g_interval_seconds = $2 * $3;
     }
 
+    /* EVERY MINUTE / EVERY HOUR (no number) */
+    | EVERY frequencyUnit
+    {
+        g_sched_type       = SCHED_INTERVAL;
+        g_interval_seconds = $2;   /* frequencyUnit returns base seconds */
+    }
 ;
 
 
+/* Returns weekday as int: 0=Sun, 1=Mon … 6=Sat */
 DayOfWeek:
-    SUNDAY    { $$ = "SUNDAY"; }
-    | MONDAY  { $$ = "MONDAY"; }
-    | TUESDAY { $$ = "TUESDAY"; }
-    | WEDNESDAY { $$ = "WEDNESDAY"; }
-    | THURSDAY  { $$ = "THURSDAY"; }
-    | FRIDAY    { $$ = "FRIDAY"; }
-    | SATURDAY  { $$ = "SATURDAY"; }
+    SUNDAY    { $$ = 0; }
+    | MONDAY  { $$ = 1; }
+    | TUESDAY { $$ = 2; }
+    | WEDNESDAY { $$ = 3; }
+    | THURSDAY  { $$ = 4; }
+    | FRIDAY    { $$ = 5; }
+    | SATURDAY  { $$ = 6; }
 ;
 
+/* Returns base seconds for one unit */
 frequencyUnit:
-    MINUTE  { $$ = "MINUTES"; }
-    | HOUR   { $$ = "HOURS"; }
-    | SECOND { $$ = "SECONDS"; }
-
-
-ScheduleTime:
-    EVERY DAY        
-    { 
-        $$ = strdup("EVERY DAY"); 
-    }
-    | EVERY WEEK ON DayOfWeek 
-    { 
-        char buf[100];
-        sprintf(buf, "EVERY WEEK ON %s", $4);
-        $$ = strdup(buf); 
-    }
+    SECOND  { $$ = 1;    }
+    | MINUTE { $$ = 60;   }
+    | HOUR   { $$ = 3600; }
 ;
 
-//needs to be changed according to the new phrase plan 
-      
 %%
 
+/* ════════════════════════════════════════════════
+   Error handler
+   ════════════════════════════════════════════════ */
 
 void yyerror(const char *s) {
     fprintf(stderr, "Syntax error at line %d: %s\n", yylineno, s);
 }
 
 
+/* ════════════════════════════════════════════════
+   Entry point
+   ════════════════════════════════════════════════ */
+
 int main(int argc, char **argv) {
 
-    /* Interactive mode — no arguments */
+    /* Interactive mode */
     if (argc == 1) {
         run_interactive();
         return 0;
     }
 
-    /* File mode — only prints banner here */
+    /* File mode */
     if (argc == 2) {
         yyin = fopen(argv[1], "r");
-        if (yyin == NULL) {
+        if (!yyin) {
             fprintf(stderr, "ERROR: Could not open file '%s'\n", argv[1]);
             return 1;
         }
     }
 
-    /* Banner and parsing output only for file mode */
     printf("\n");
     printf(" ██████╗██╗   ██╗██╗      ██████╗ ███╗   ██╗\n");
     printf("██╔════╝╚██╗ ██╔╝██║     ██╔═══██╗████╗  ██║\n");
@@ -424,17 +447,22 @@ int main(int argc, char **argv) {
     printf("██║       ╚██╔╝  ██║     ██║   ██║██║╚██╗██║\n");
     printf("╚██████╗   ██║   ███████╗╚██████╔╝██║ ╚████║\n");
     printf(" ╚═════╝   ╚═╝   ╚══════╝ ╚═════╝ ╚═╝  ╚═══╝\n\n");
-    printf("Parsing TaskLang++ input...\n\n");
-    printf("--- EXECUTION START ---\n");
+    printf("Parsing Cylon input...\n\n");
+    printf("--- PARSE START ---\n");
 
     int result = yyparse();
 
-    if (argc == 2 && yyin != NULL) fclose(yyin);
+    if (argc == 2 && yyin) fclose(yyin);
 
     if (result == 0) {
-        printf("\n--- EXECUTION COMPLETE ---\n");
+        printf("\n--- PARSE COMPLETE — %d task(s) loaded ---\n", task_count);
+        /* TODO: hand off to scheduler here
+           init_schedule();
+           scheduler_loop();
+        */
     } else {
-        printf("\n--- EXECUTION FAILED ---\n");
+        printf("\n--- PARSE FAILED ---\n");
     }
+
     return result;
 }
