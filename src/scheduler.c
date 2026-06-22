@@ -1,5 +1,5 @@
-#include "time.h";
-
+#include <time.h>
+#include <stdio.h>
 
 while(1) {
     time_t now = time(NULL);
