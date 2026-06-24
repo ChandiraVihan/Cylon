@@ -3,3 +3,8 @@
 
 #include <time.h>
 
+struct Task {
+
+};
+
+#endif
