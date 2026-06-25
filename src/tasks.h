@@ -2,9 +2,10 @@
 #define TASKS_H
 
 #include <time.h>
+#define MAX_TASKS 1000
 
-struct Task {
-
-};
+typedef struct TASK {
+  
+} Task;
 
 #endif
