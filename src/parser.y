@@ -456,10 +456,12 @@ int main(int argc, char **argv) {
 
     if (result == 0) {
         printf("\n--- PARSE COMPLETE — %d task(s) loaded ---\n", task_count);
-        /* TODO: hand off to scheduler here
-           init_schedule();
-           scheduler_loop();
-        */
+        // temporary — run all tasks immediately to test executor
+    for (int i = 0; i < task_count; i++) {
+        printf("\n[EXEC] Running task: %s\n", tasks[i].name);
+        execute_task(&tasks[i]);
+        printf("[EXEC] Exit code: %d\n", tasks[i].last_exit_code);
+    }
     } else {
         printf("\n--- PARSE FAILED ---\n");
     }
