@@ -4,6 +4,7 @@
 #include <string.h>
 #include "executor.h"
 #include "tasks.h"
+#include "scheduler.h"
 
 /* ── Per-task globals — reset after each TASK block ── */
 CommandType  g_cmd_type          = CMD_RUN;
@@ -455,13 +456,12 @@ int main(int argc, char **argv) {
     if (argc == 2 && yyin) fclose(yyin);
 
     if (result == 0) {
-        printf("\n--- PARSE COMPLETE — %d task(s) loaded ---\n", task_count);
-        // temporary — run all tasks immediately to test executor
-    for (int i = 0; i < task_count; i++) {
-        printf("\n[EXEC] Running task: %s\n", tasks[i].name);
-        execute_task(&tasks[i]);
-        printf("[EXEC] Exit code: %d\n", tasks[i].last_exit_code);
-    }
+        printf("\n--- PARSE SUCCESS ---\n");
+        printf("Parsed %d task(s)\n", task_count);
+        if (task_count > 0) {
+            init_schedule();
+            scheduler_loop();
+        }
     } else {
         printf("\n--- PARSE FAILED ---\n");
     }

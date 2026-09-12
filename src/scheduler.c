@@ -2,7 +2,15 @@
 #include <stdio.h>
 #include "tasks.h"
 #include "executor.h"
+#include "scheduler.h"
 
+#ifdef _WIN32
+    #include <windows.h>
+    #define SLEEP() Sleep(60000)   // milliseconds
+#else
+    #include <unistd.h>
+    #define SLEEP() sleep(60)      // seconds
+#endif
 
 time_t calculate_next_run(Task *task) {
     time_t now = time(NULL);
@@ -43,19 +51,38 @@ time_t calculate_next_run(Task *task) {
     
 }
 
-init_schedule(){}
+void init_schedule(){
+    printf("\n[SCHED] Initialising schedule...\n");
+    for (int i = 0; i < task_count; i++) {
+        if (tasks[i].sched_type != SCHED_NONE) {
+            tasks[i].next_run = calculate_next_run(&tasks[i]);
+            printf("[SCHED] Task '%s' first run at: %s",
+                   tasks[i].name, ctime(&tasks[i].next_run));
+        }
+    }
+}
 
-scheduler_loop(){
+void scheduler_loop(){
 
     while(1) {
     time_t now = time(NULL);
     for (int i = 0; i < task_count; i++) {
+
+    // skip event-driven tasks 
+        if (tasks[i].sched_type == SCHED_NONE) continue;
+
+    // skip disabled tasks
+        if (!tasks[i].enabled) continue;
+
         if (tasks[i].next_run <= now) {
+            printf("[SCHED] Executing task: %s\n", tasks[i].name);
             execute_task(&tasks[i]);
             tasks[i].next_run = calculate_next_run(&tasks[i]);
+            printf("[SCHED] Next run at: %s", ctime(&tasks[i].next_run));
         }
     }
-    sleep(60000); // tick every minute
+    sleep(); // tick every minute
 }
+
 }
 
