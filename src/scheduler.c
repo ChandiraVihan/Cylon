@@ -1,7 +1,53 @@
 #include <time.h>
 #include <stdio.h>
+#include "tasks.h"
+#include "executor.h"
 
-while(1) {
+
+time_t calculate_next_run(Task *task) {
+    time_t now = time(NULL);
+    
+    switch (task->sched_type) {
+        case SCHED_INTERVAL:
+            return now + task->interval_seconds;
+
+        case SCHED_DAILY: {
+            struct tm *t = localtime(&now);
+            t->tm_hour = task->hour;
+            t->tm_min  = task->minute;
+            t->tm_sec  = 0;
+            time_t next = mktime(t);
+            if (next <= now) next += 86400; // already passed today, use tomorrow
+            return next;
+        }
+
+        case SCHED_WEEKLY: {
+            struct tm *t = localtime(&now);
+
+            int today = t->tm_wday; // 0=Sun, 1=Mon, ..., 6=Sat
+            int target = task->weekday; 
+            int days = (target - today + 7) % 7;
+            if (days == 0) days =7 ; // if today is the target day, schedule for next week
+            t->tm_mday += days;
+            t->tm_hour = task->hour;
+            t->tm_min  = task->minute;
+            t->tm_sec  = 0;
+
+            return mktime(t); // fix overflow
+        }
+        
+        case SCHED_NONE:
+            default:
+            return 0; 
+    }
+    
+}
+
+init_schedule(){}
+
+scheduler_loop(){
+
+    while(1) {
     time_t now = time(NULL);
     for (int i = 0; i < task_count; i++) {
         if (tasks[i].next_run <= now) {
@@ -9,30 +55,7 @@ while(1) {
             tasks[i].next_run = calculate_next_run(&tasks[i]);
         }
     }
-    sleep(60); // tick every minute
+    sleep(60000); // tick every minute
+}
 }
 
-time_t calculate_next_run(Task *task) {
-    time_t now = time(NULL);
-    
-    if (task->interval_seconds > 0) {
-        // EVERY N MINUTES or EVERY N HOURS
-        return now + task->interval_seconds;
-    }
-    
-    if (task->schedule_type == EVERY_DAY) {
-        // find next occurrence of HH:MM today or tomorrow
-        struct tm *t = localtime(&now);
-        t->tm_hour = task->hour;
-        t->tm_min  = task->minute;
-        t->tm_sec  = 0;
-        time_t next = mktime(t);
-        if (next <= now) next += 86400; // already passed today, use tomorrow
-        return next;
-    }
-    
-    if (task->schedule_type == EVERY_WEEK) {
-        // find next occurrence of specific weekday + time
-        // similar logic but add days until correct weekday
-    }
-}

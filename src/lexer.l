@@ -16,7 +16,7 @@
 "GENERATE"    { return GENERATE; }
 "EXPORT"      { return EXPORT; }
 "NOTIFY"      { return NOTIFY; }
-"ON_FAILURE" { return ON_FAILURE; }
+"ON_FAILURE"  { return ON_FAILURE; }
 "AFTER"       { return AFTER; }
 "BEFORE"      { return BEFORE; }
 "IF"          { return IF; }
