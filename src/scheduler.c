@@ -81,7 +81,7 @@ void scheduler_loop(){
             printf("[SCHED] Next run at: %s", ctime(&tasks[i].next_run));
         }
     }
-    sleep(); // tick every minute
+    SLEEP(); // tick every minute
 }
 
 }

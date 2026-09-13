@@ -1,0 +1,11 @@
+TASK transferFiles {
+    MOVE "" TO "Recycle Bin"
+    EVERY DAY AT 17:00
+}
+
+
+
+
+
+
+
